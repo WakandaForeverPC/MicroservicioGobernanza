@@ -2,28 +2,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const partidosDiv = document.getElementById('partidos');
     const graficoVotos = document.getElementById('graficoVotos').getContext('2d');
     let chart;
+    let partidos = [];
 
-    const obtenerPartidos = async () => {
-        try {
-            const response = await fetch('/gobernanza');
-            const partidos = await response.json();
-            actualizarPartidos(partidos);
-            actualizarGrafico(partidos);
-        } catch (error) {
-            console.error('Error fetching partidos:', error);
-        }
+    const colorMap = {
+        'Partido A': 'rgba(0, 123, 255, 0.8)', // Blue
+        'Partido B': 'rgba(40, 167, 69, 0.8)', // Green
+        'Partido C': 'rgba(255, 193, 7, 0.8)', // Yellow
+        'Partido D': 'rgba(220, 53, 69, 0.8)'  // Red
     };
 
-    const votar = async (nombrePartido) => {
+    const borderColorMap = {
+        'Partido A': 'rgba(0, 123, 255, 1)', // Blue
+        'Partido B': 'rgba(40, 167, 69, 1)', // Green
+        'Partido C': 'rgba(255, 193, 7, 1)', // Yellow
+        'Partido D': 'rgba(220, 53, 69, 1)'  // Red
+    };
+
+    const obtenerPartidos = () => {
+        partidos = [
+            { nombre: 'Partido A', votos: Math.floor(Math.random() * 100) },
+            { nombre: 'Partido B', votos: Math.floor(Math.random() * 100) },
+            { nombre: 'Partido C', votos: Math.floor(Math.random() * 100) },
+            { nombre: 'Partido D', votos: Math.floor(Math.random() * 100) }
+        ];
+        actualizarPartidos(partidos);
+        actualizarGrafico(partidos);
+    };
+
+    const votar = async (button) => {
+        const nombrePartido = button.getAttribute('data-nombre');
         try {
             await fetch('/gobernanza/votar', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                body: JSON.stringify(nombrePartido)
+                body: new URLSearchParams({ nombrePartido })
             });
-            obtenerPartidos();
+            partidos = partidos.map(partido => {
+                if (partido.nombre === nombrePartido) {
+                    return { ...partido, votos: partido.votos + 1 };
+                }
+                return partido;
+            });
+            actualizarGrafico(partidos);
+            alert(`You voted for ${nombrePartido}`);
         } catch (error) {
             console.error('Error voting:', error);
         }
@@ -33,13 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
         partidosDiv.innerHTML = '';
         partidos.forEach(partido => {
             const button = document.createElement('button');
-            button.innerText = `Votar por ${partido.nombre}`;
-            button.onclick = () => votar(partido.nombre);
+            button.innerHTML = `<i class="fas fa-vote-yea"></i> Votar por ${partido.nombre}`;
+            button.setAttribute('data-nombre', partido.nombre);
+            button.style.backgroundColor = colorMap[partido.nombre];
+            button.onclick = () => votar(button);
             partidosDiv.appendChild(button);
         });
     };
 
-    const ctx = document.getElementById('graficoVotos').getContext('2d');
     const actualizarGrafico = (partidos) => {
         const nombres = partidos.map(p => p.nombre);
         const votos = partidos.map(p => p.votos);
@@ -48,14 +72,14 @@ document.addEventListener('DOMContentLoaded', () => {
             chart.destroy();
         }
 
-        chart = new Chart(ctx, {
+        chart = new Chart(graficoVotos, {
             type: 'pie',
             data: {
                 labels: nombres,
                 datasets: [{
                     data: votos,
-                    backgroundColor: votos.map(value => value > 50 ? 'rgba(75, 192, 192, 0.2)' : 'rgba(255, 99, 132, 0.2)'),
-                    borderColor: votos.map(value => value > 50 ? 'rgba(75, 192, 192, 1)' : 'rgba(255, 99, 132, 1)'),
+                    backgroundColor: nombres.map(nombre => colorMap[nombre]),
+                    borderColor: nombres.map(nombre => borderColorMap[nombre]),
                     borderWidth: 1
                 }]
             },
@@ -74,5 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     };
+
     obtenerPartidos();
 });

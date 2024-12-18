@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Votación de Gobernanza</title>
-    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/gobernanza/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+<div class="container">
     <h1>Votación de Gobernanza</h1>
     <div id="partidos">
         <ul>
@@ -16,66 +17,8 @@
         </ul>
     </div>
     <canvas id="graficoVotos" width="400" height="200"></canvas>
+</div>
 
-    <script>
-        async function obtenerPartidos() {
-            const response = await fetch('/gobernanza');
-            const partidos = await response.json();
-            const partidosDiv = document.getElementById('partidos');
-            partidosDiv.innerHTML = '';
-            partidos.forEach(partido => {
-                const button = document.createElement('button');
-                button.innerText = `Votar por ${partido.nombre}`;
-                button.setAttribute('data-nombre', partido.nombre);
-                button.onclick = () => votar(button);
-                partidosDiv.appendChild(button);
-            });
-            actualizarGrafico(partidos);
-        }
-
-        async function votar(button) {
-            const nombrePartido = button.getAttribute('data-nombre');
-            await fetch('/gobernanza/votar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(nombrePartido)
-            });
-            alert(`Has votado al ${nombrePartido}`);
-            obtenerPartidos();
-        }
-
-        function actualizarGrafico(partidos) {
-            const ctx = document.getElementById('graficoVotos').getContext('2d');
-            const totalVotos = partidos.reduce((sum, partido) => sum + partido.votos, 0);
-            const nombres = partidos.map(p => p.nombre);
-            const porcentajes = partidos.map(p => (p.votos / totalVotos * 100).toFixed(2));
-
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: nombres,
-                    datasets: [{
-                        label: 'Porcentaje de Votos',
-                        data: porcentajes,
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    }
-                }
-            });
-        }
-
-        obtenerPartidos();
-    </script>
+<script src="/gobernanza/script.js"></script>
 </body>
 </html>
